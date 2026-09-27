@@ -102,6 +102,15 @@ class FilterTests(unittest.TestCase):
         self.assertIn("dopyt", scraper.rejection_reason(raw(title="Hľadám kanceláriu")))
         self.assertIn("prenajaté", scraper.rejection_reason(raw(title="Prenajaté - kancelária")))
 
+    def test_implausible_price_becomes_none(self):
+        # reálny prípad 27.9.2026: portál ukazuje "1 €/mes." pri viac-výmerovom inzeráte
+        fixed = scraper.fix_implausible_price(raw(price=1.0))
+        self.assertIsNone(fixed["price"])
+        self.assertIn("neplausibiln", fixed["price_note"])
+        self.assertIsNone(scraper.rejection_reason(fixed))          # bez ceny sa neodmieta
+        self.assertEqual(scraper.fix_implausible_price(raw(price=250.0))["price"], 250.0)   # normálna cena ostáva
+        self.assertIsNone(scraper.fix_implausible_price(raw(price=None))["price_note"])
+
     def test_real_listings_against_default_limits(self):
         cards = {x["portal_id"]: x for x in ns.parse_page(fx.PAGE_OFFICES, "kancelaria")}
         self.assertIsNone(scraper.rejection_reason(cards["Ju4gHY1H3_h"]))
