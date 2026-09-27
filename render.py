@@ -219,11 +219,11 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
   <div class="subtitle">Aktualizované: %%UPDATED%% · %%OBCE%% · prenájom · štúdio / ateliér / kancelárie</div>
   %%RUN_STATUS%%
   <div class="controls">
+    <button class="filter-btn" data-filter="fav" data-label="★ Obľúbené">★ Obľúbené (0)</button>
     <button class="filter-btn active" data-filter="all" data-label="Všetky aktívne">Všetky aktívne (%%N_ALL%%)</button>
     <button class="filter-btn" data-filter="kancelaria" data-label="Kancelárie">Kancelárie (%%N_KANCELARIA%%)</button>
     <button class="filter-btn" data-filter="obchod" data-label="Obchodné">Obchodné (%%N_OBCHOD%%)</button>
     <button class="filter-btn" data-filter="ine" data-label="Iné priestory">Iné priestory (%%N_INE%%)</button>
-    <button class="filter-btn" data-filter="fav" data-label="★ Obľúbené">★ Obľúbené (0)</button>
     <button class="filter-btn" data-filter="removed" data-label="Stiahnuté">Stiahnuté (%%N_REMOVED%%)</button>
   </div>
   <div class="controls">
