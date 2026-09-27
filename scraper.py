@@ -40,8 +40,20 @@ def rejection_reason(c: dict) -> str | None:
     return None
 
 
+def fix_implausible_price(c: dict) -> dict:
+    """Niektoré inzeráty majú v cene chybu portálu/realitky (napr. '1 €/mes.' pri ponuke s viacerými výmerami).
+    Takú cenu berieme ako neuvedenú, nie ako skutočnú - inak by prešla ako extrémne lacný inzerát a spustila
+    falošné 'price_drop' oznámenie."""
+    if c.get("price") is not None and c["price"] < config.MIN_PLAUSIBLE_PRICE:
+        c = dict(c)
+        c["price_note"] = c["price_note"] or f"Cena v inzeráte neplausibilná ({c['price']:.2f} €/mes.) - berie sa ako neuvedená"
+        c["price"] = None
+    return c
+
+
 def enrich(c: dict) -> dict:
     """Doplní príznaky (štúdio, prízemie), energie, DPH a parkovanie z titulku a popisu."""
+    c = fix_implausible_price(c)
     c = dict(c)
     text = c.get("description_raw") or ""
     c["flags"] = ",".join(textutils.detect_flags(c["title"], text, c.get("subtype"))) or None

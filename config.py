@@ -18,6 +18,11 @@ KATEGORIE = [
 # Tvrdé filtre (None = bez limitu). Inzerát mimo limitov sa z DB vymaže (zmenou limitu sa vráti ako nový).
 # Inzerát BEZ ceny ("Info v RK") alebo bez plochy sa nikdy neodmieta.
 PRICE_MAX = 1500       # €/mesiac (nájom bez energií, ako je v inzeráte)
+
+# Niektoré inzeráty (viac výmer v jednom ozname) majú v cene chybu realitky - napr. "1 €/mes." alebo "4,5 €/mes."
+# namiesto skutočnej ceny (overené 27.9.2026 na živých dátach). Cena pod touto hranicou sa berie ako neuvedená,
+# NIE ako skutočná cena (a teda sa inzerát needmieta a nedostane oznámenie "price_drop" na absurdne nízku sumu).
+MIN_PLAUSIBLE_PRICE = 20
 MIN_AREA_M2 = 15
 MAX_AREA_M2 = 250      # odfiltruje haly a celé areály (napr. 1350 m² prevádzkový areál)
 
