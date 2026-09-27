@@ -1,0 +1,61 @@
+name: Denný scrape prenájmu priestorov Banská Bystrica
+
+on:
+  schedule:
+    # 6:20 UTC = 8:20 (leto) / 7:20 (zima) v Bratislave. Formát cron: minúta hodina * * *
+    - cron: "20 6 * * *"
+  workflow_dispatch:  # ručné spustenie z GitHub UI (tab "Actions")
+    inputs:
+      discord_test:
+        description: "Poslať testovaciu správu na Discord"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write  # potrebné, aby workflow mohol commitnúť späť DB a HTML
+
+concurrency:
+  group: studio-scrape
+  cancel-in-progress: false  # nikdy neprerušuj bežiaci scrape
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repozitára
+        uses: actions/checkout@v4
+
+      - name: Nastaviť Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Nainštalovať závislosti
+        run: pip install -r requirements.txt
+
+      - name: Testy parserov (na uložených vzorkách)
+        run: python -m unittest discover -s tests -v
+
+      - name: Spustiť scraper
+        # Exit kód 1 = zlyhali VŠETKY zdroje (workflow sa označí červeno a pošle upozornenie).
+        env:
+          DISCORD_WEBHOOK_STUDIO: ${{ secrets.DISCORD_WEBHOOK_STUDIO }}
+        run: python scraper.py
+
+      - name: Poslať testovaciu správu na Discord (len pri ručnom spustení s voľbou)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.discord_test }}
+        env:
+          DISCORD_WEBHOOK_STUDIO: ${{ secrets.DISCORD_WEBHOOK_STUDIO }}
+        run: python notify.py
+
+      - name: Vygenerovať HTML stránku
+        run: python render.py
+
+      - name: Commitnúť a pushnúť zmeny (DB + HTML)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/listings.db docs/index.html
+          git diff --staged --quiet && echo "Žiadne zmeny, nič necommitujem." || git commit -m "Denná aktualizácia inzerátov ($(date -u +%Y-%m-%d))"
+          git push
