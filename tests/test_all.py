@@ -102,6 +102,19 @@ class FilterTests(unittest.TestCase):
         self.assertIn("dopyt", scraper.rejection_reason(raw(title="Hľadám kanceláriu")))
         self.assertIn("prenajaté", scraper.rejection_reason(raw(title="Prenajaté - kancelária")))
 
+    def test_clear_implausible_prices_in_db(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "t.db")
+            db.init_db(path)
+            with db.connect(path) as conn:
+                db.upsert_listing(conn, raw("a", price=1.0))
+                db.upsert_listing(conn, raw("b", price=250.0))
+                self.assertEqual(db.clear_implausible_prices(conn, config.MIN_PLAUSIBLE_PRICE), 1)
+                self.assertIsNone(db.get_listing(conn, "fake:a")["price"])
+                self.assertEqual(db.get_listing(conn, "fake:b")["price"], 250.0)
+                self.assertEqual(db.get_price_history(conn, "fake:a"), [])
+                self.assertEqual(db.clear_implausible_prices(conn, config.MIN_PLAUSIBLE_PRICE), 0)   # druhý beh: nič
+
     def test_implausible_price_becomes_none(self):
         # reálny prípad 27.9.2026: portál ukazuje "1 €/mes." pri viac-výmerovom inzeráte
         fixed = scraper.fix_implausible_price(raw(price=1.0))

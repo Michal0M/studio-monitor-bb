@@ -159,6 +159,16 @@ def detail_is_stale(existing: dict | None, max_age_days: int, version: int | Non
     return (datetime.now(timezone.utc) - checked).days >= max_age_days
 
 
+def clear_implausible_prices(conn, min_price: float) -> int:
+    """Vynuluje uloženú cenu pod min_price (chyba portálu z minulého behu, nie skutočná cena) a zmaže ju
+    aj z price_history, aby nekazila graf vývoja ceny. Bezpečné spúšťať pri každom behu."""
+    rows = conn.execute("SELECT id FROM listings WHERE price IS NOT NULL AND price < ?", (min_price,)).fetchall()
+    for row in rows:
+        conn.execute("DELETE FROM price_history WHERE listing_id = ? AND price < ?", (row["id"], min_price))
+        conn.execute("UPDATE listings SET price = NULL WHERE id = ?", (row["id"],))
+    return len(rows)
+
+
 def delete_listing(conn, source: str, portal_id: str) -> bool:
     """Natvrdo zmaže inzerát + históriu (keď prestal sedieť na kritériá - NIE keď zmizol z portálu)."""
     listing_id = make_id(source, portal_id)

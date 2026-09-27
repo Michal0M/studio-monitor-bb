@@ -156,6 +156,10 @@ def process_source(module, conn, pending: list | None = None) -> tuple[str, dict
 
 def main() -> int:
     db.init_db(config.DB_PATH)
+    with db.connect(config.DB_PATH) as conn:
+        cleared = db.clear_implausible_prices(conn, config.MIN_PLAUSIBLE_PRICE)
+        if cleared:
+            print(f"Vyčistených {cleared} neplauzibilných cien uložených z predchádzajúcich behov.")
     results = []
     pending: list = []
     with db.connect(config.DB_PATH) as conn:
