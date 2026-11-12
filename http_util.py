@@ -28,10 +28,11 @@ ANTIBOT_MARKERS = ["anubis", "cf-chl", "cf-browser-verification", "just a moment
 class SourceError(Exception):
     """Zdroj sa nepodarilo spracovať (blokovanie, sieť, zmenená štruktúra)."""
 
-    def __init__(self, kind: str, message: str):
+    def __init__(self, kind: str, message: str, status: int | None = None):
         super().__init__(f"{kind}: {message}")
         self.kind = kind          # 'blocked' | 'network' | 'structure'
         self.message = message
+        self.status = status      # HTTP kód, ak ide o HTTP chybu
 
 
 @dataclass
@@ -73,7 +74,7 @@ def fetch(url: str, log_prefix: str = "", attempts: int = 2) -> Page:
             time.sleep(10)
             continue
         if resp.status_code != 200:
-            raise SourceError("network", f"HTTP {resp.status_code} pri {url}")
+            raise SourceError("network", f"HTTP {resp.status_code} pri {url}", status=resp.status_code)
         return Page(url=url, status=resp.status_code, text=resp.text, elapsed=elapsed)
     raise SourceError("network", f"nepodarilo sa stiahnuť {url}")  # pre istotu (nedosiahnuteľné)
 
