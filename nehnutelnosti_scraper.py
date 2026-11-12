@@ -171,7 +171,15 @@ def fetch_all() -> list[dict]:
         base = config.NEHNUTELNOSTI_URL.format(cat=cat, mesto=slug)
         for page_no in range(1, config.MAX_PAGES_PER_QUERY + 1):
             url = base if page_no == 1 else f"{base}?page={page_no}"
-            page = fetch(url, prefix)
+            try:
+                page = fetch(url, prefix)
+            except SourceError as e:
+                # Posledná strana môže byť presne plná (napr. 4 x 30 = 120 inzerátov); potom portál
+                # na ďalšiu stranu odpovie 404. Na strane 2+ je to normálny koniec výpisu, nie porucha.
+                if page_no > 1 and e.status == 404:
+                    print(f"{prefix} {cat}: strana {page_no} neexistuje (404) - koniec výpisu")
+                    break
+                raise
             if not page_is_for(page.text, city_label):
                 raise SourceError("structure", f"stránka {url} nie je výpisom pre '{city_label}' "
                                                f"(presmerovanie alebo zmena štruktúry)")
